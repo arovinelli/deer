@@ -1,5 +1,7 @@
 #include "ComputeNEMLStrainBase.h"
 
+#include "StressDivergenceNEML.h" // Soley for the enum
+
 template <>
 InputParameters
 validParams<ComputeNEMLStrainBase>()
@@ -9,6 +11,7 @@ validParams<ComputeNEMLStrainBase>()
   params.addRequiredCoupledVar("displacements",
                                "Displacement variables");
   params.addParam<bool>("large_kinematics", false, "Use large displacement kinematics.");
+  params.addParam<MooseEnum>("type", MechanicsProblemType, "Coordinates and problem type"); 
   params.addParam<std::vector<MaterialPropertyName>>("eigenstrain_names", "List of eigenstrains to account for.");
   params.suppressParameter<bool>("use_displaced_mesh");
 
@@ -29,7 +32,8 @@ ComputeNEMLStrainBase::ComputeNEMLStrainBase(const InputParameters & parameters)
     _eigenstrain_names(getParam<std::vector<MaterialPropertyName>>("eigenstrain_names")),
     _eigenstrains(_eigenstrain_names.size()),
     _eigenstrains_old(_eigenstrain_names.size()),
-    _ld(getParam<bool>("large_kinematics"))
+    _ld(getParam<bool>("large_kinematics")),
+    _coords(getParam<MooseEnum>("type"))
 {
   for (unsigned int i = 0; i < _eigenstrain_names.size(); i++) {
     _eigenstrains[i] = &getMaterialProperty<RankTwoTensor>(_eigenstrain_names[i]);
@@ -93,9 +97,21 @@ RankTwoTensor ComputeNEMLStrainBase::eigenstrainIncrement()
 
 void ComputeNEMLStrainBase::computeQpProperties()
 {
-  _def_grad[_qp] = 
-      (RankTwoTensor::Identity() + RankTwoTensor(
-        (*_grad_disp[0])[_qp],
-        (*_grad_disp[1])[_qp],
-        (*_grad_disp[2])[_qp]));
+  if (_coords == "cartesian") {
+    _def_grad[_qp] = 
+        (RankTwoTensor::Identity() + RankTwoTensor(
+          (*_grad_disp[0])[_qp],
+          (*_grad_disp[1])[_qp],
+          (*_grad_disp[2])[_qp]));
+  }
+  else if (_coords == "axisymmetric") {
+    _def_grad[_qp] = 
+        (RankTwoTensor::Identity() + RankTwoTensor(
+          (*_grad_disp[0])[_qp],
+          (*_grad_disp[1])[_qp],
+          RealVectorValue({0,0,(*_disp[0])[_qp] / _q_point[_qp](0)})));
+  }
+  else {
+    mooseError("Unsupported coordinate system in strain calculator.");
+  }
 }

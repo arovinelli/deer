@@ -50,6 +50,7 @@ class ComputeNEMLStrainBase: public DerivativeMaterialInterface<Material>
   std::vector<const MaterialProperty<RankTwoTensor>*> _eigenstrains_old;
 
   bool _ld;
+  MooseEnum _coords;
 };
 
 #endif // COMPUTENEMLSTRAINBASE_H

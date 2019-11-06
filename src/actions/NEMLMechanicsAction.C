@@ -9,6 +9,7 @@ registerMooseAction("DeerApp", NEMLMechanicsAction, "add_kernel");
 registerMooseAction("DeerApp", NEMLMechanicsAction, "add_material");
 registerMooseAction("DeerApp", NEMLMechanicsAction, "add_aux_variable");
 registerMooseAction("DeerApp", NEMLMechanicsAction, "add_aux_kernel");
+registerMooseAction("DeerApp", NEMLMechanicsAction, "init_problem");
 
 const std::vector<std::string> all_tensors = {
     "mechanical_strain", "stress", "elastic_strain", "inelastic_strain"};
@@ -31,6 +32,8 @@ template <> InputParameters validParams<NEMLMechanicsAction>() {
   params.addParam<MooseEnum>("kinematics", kinematicType,
                              "Kinematic formulation");
 
+  params.addParam<MooseEnum>("type", MechanicsProblemType, "Type of problem and coordinates");
+
   params.addParam<bool>(
       "add_all_output", false,
       "Dump all the usual stress and strain variables to the output");
@@ -52,13 +55,16 @@ NEMLMechanicsAction::NEMLMechanicsAction(const InputParameters &params)
       _add_disp(getParam<bool>("add_displacements")),
       _add_all(getParam<bool>("add_all_output")),
       _kinematics(getParam<MooseEnum>("kinematics").getEnum<Kinematics>()),
-      _eigenstrains(getParam<std::vector<MaterialPropertyName>>("eigenstrains"))
+      _eigenstrains(getParam<std::vector<MaterialPropertyName>>("eigenstrains")),
+      _coords(getParam<MooseEnum>("type"))
 {
 
 }
 
 void NEMLMechanicsAction::act() {
-  if (_current_task == "add_variable") {
+  if (_current_task == "init_problem") {
+
+  } else if (_current_task == "add_variable") {
     const bool second = _problem->mesh().hasSecondOrderElements();
 
     InputParameters params = _factory.getValidParams("MooseVariableBase");
@@ -80,8 +86,10 @@ void NEMLMechanicsAction::act() {
     params.set<std::vector<VariableName>>("displacements") = _displacements;
     params.set<std::vector<MaterialPropertyName>>("eigenstrain_names") = _eigenstrains;
     params.set<bool>("large_kinematics") = _kin_mapper[_kinematics];
+    params.set<MooseEnum>("type") = _coords;
 
     _problem->addMaterial("ComputeNEMLStrain", "strain", params);
+
   } else if (_current_task == "add_kernel") {
     // Add the kernels
     for (unsigned int i = 0; i < _ndisp; ++i) {
@@ -91,6 +99,7 @@ void NEMLMechanicsAction::act() {
       params.set<NonlinearVariableName>("variable") = _displacements[i];
       params.set<unsigned int>("component") = i;
       params.set<bool>("use_displaced_mesh") = _kin_mapper[_kinematics];
+      params.set<MooseEnum>("type") = _coords;
 
       std::string name = "SD_" + Moose::stringify(i);
 

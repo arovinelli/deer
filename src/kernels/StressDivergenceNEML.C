@@ -2,6 +2,8 @@
 
 registerMooseObject("DeerApp", StressDivergenceNEML);
 
+MooseEnum MechanicsProblemType("cartesian axisymmetric" "cartesian");
+
 template <>
 InputParameters
 validParams<StressDivergenceNEML>()
@@ -12,6 +14,8 @@ validParams<StressDivergenceNEML>()
                                         "Which direction this kernel acts in");
   params.addRequiredCoupledVar("displacements",
                                "The displacement components");
+  params.addParam<MooseEnum>("type", MechanicsProblemType, "Problem type and coordinates");
+
   return params;
 }
 
@@ -25,7 +29,8 @@ StressDivergenceNEML::StressDivergenceNEML(const InputParameters & parameters)
     _grad_disp(_ndisp),
     _stress(getMaterialPropertyByName<RankTwoTensor>("stress")),
     _material_jacobian(getMaterialPropertyByName<RankFourTensor>("material_jacobian")),
-    _df(getMaterialPropertyByName<RankTwoTensor>("df"))
+    _df(getMaterialPropertyByName<RankTwoTensor>("df")),
+    _coords(getParam<MooseEnum>("type"))
 
 {
 

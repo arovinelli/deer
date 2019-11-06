@@ -6,6 +6,8 @@
 #include "RankTwoTensor.h"
 #include "RankFourTensor.h"
 
+extern MooseEnum MechanicsProblemType;
+
 class StressDivergenceNEML;
 
 template <>
@@ -55,6 +57,8 @@ class StressDivergenceNEML: public DerivativeMaterialInterface<Kernel>
   const MaterialProperty<RankFourTensor> & _material_jacobian;
 
   const MaterialProperty<RankTwoTensor> & _df;
+
+  const MooseEnum _coords;
 };
 
 Real det(const RankTwoTensor & T);

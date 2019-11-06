@@ -2,6 +2,7 @@
 #define NEMLMECHANICSACTION_H
 
 #include "Action.h"
+#include "StressDivergenceNEML.h"
 
 class NEMLMechanicsAction;
 
@@ -37,7 +38,9 @@ class NEMLMechanicsAction : public Action
     {Kinematics::Small, false},
     {Kinematics::Large, true}};
 
-  std::vector<MaterialPropertyName> _eigenstrains;  
+  std::vector<MaterialPropertyName> _eigenstrains; 
+
+  const MooseEnum _coords;
 };
 
 #endif // NEMLMECHANICSACTION_H
